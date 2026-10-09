@@ -4,9 +4,11 @@ A simple weather dashboard that fetches live data from the Open-Meteo public API
 
 ## Features
 - Search for a city and view current weather
-- See daily highs and lows for the next 5 days
+- See hourly and 5-day forecast data
 - Toggle between Celsius and Fahrenheit
-- Remembers the last searched city using localStorage
+- Switch between dark and light themes
+- Displays a loading state while data is fetched
+- Remembers the last searched city and selected theme using localStorage
 
 ## Run locally
 1. Clone the repo.

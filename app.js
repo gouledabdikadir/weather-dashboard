@@ -1,4 +1,5 @@
 const STORAGE_KEY = "weather-dashboard-city";
+const THEME_KEY = "weather-dashboard-theme";
 const DEFAULT_CITY = "New York";
 const WEATHER_CODES = {
   0: { label: "Clear sky", icon: "☀️" },
@@ -33,7 +34,8 @@ const WEATHER_CODES = {
 
 const state = {
   unit: "celsius",
-  lastCity: localStorage.getItem(STORAGE_KEY) || DEFAULT_CITY
+  lastCity: localStorage.getItem(STORAGE_KEY) || DEFAULT_CITY,
+  theme: localStorage.getItem(THEME_KEY) || "dark"
 };
 
 const elements = {
@@ -52,9 +54,12 @@ const elements = {
   sunset: document.querySelector("#sunset"),
   highTemp: document.querySelector("#highTemp"),
   lowTemp: document.querySelector("#lowTemp"),
+  hourlyForecast: document.querySelector("#hourlyForecast"),
   forecastList: document.querySelector("#forecastList"),
   statusMessage: document.querySelector("#statusMessage"),
-  unitButtons: document.querySelectorAll(".unit-button")
+  unitButtons: document.querySelectorAll(".unit-button"),
+  themeToggle: document.querySelector("#themeToggle"),
+  themeToggleIcon: document.querySelector(".toggle-icon")
 };
 
 function formatTemperature(value) {
@@ -73,6 +78,13 @@ function formatTime(value) {
   }).format(date);
 }
 
+function formatHour(dateString) {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric"
+  }).format(date);
+}
+
 function formatDay(dateString) {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
@@ -87,6 +99,39 @@ function updateUnitButtons() {
   elements.unitButtons.forEach((button) => {
     const isActive = button.dataset.unit === state.unit;
     button.classList.toggle("active", isActive);
+  });
+}
+
+function applyTheme() {
+  document.body.dataset.theme = state.theme;
+  localStorage.setItem(THEME_KEY, state.theme);
+  elements.themeToggleIcon.textContent = state.theme === "light" ? "☀️" : "🌙";
+}
+
+function renderHourlyForecast(times, tempList, codeList) {
+  elements.hourlyForecast.innerHTML = "";
+
+  const slice = times.slice(0, 6);
+
+  slice.forEach((time, index) => {
+    const meta = getWeatherMeta(codeList[index]);
+    const item = document.createElement("article");
+    item.className = "hourly-item";
+
+    const label = document.createElement("span");
+    label.className = "hour";
+    label.textContent = formatHour(time);
+
+    const icon = document.createElement("span");
+    icon.className = "hour-icon";
+    icon.textContent = meta.icon;
+
+    const temp = document.createElement("span");
+    temp.className = "hour-temp";
+    temp.textContent = formatTemperature(tempList[index]);
+
+    item.append(label, icon, temp);
+    elements.hourlyForecast.appendChild(item);
   });
 }
 
@@ -119,7 +164,7 @@ function renderForecast(days, codeList, minList, maxList) {
 }
 
 function renderWeather(data, location) {
-  const { current, daily } = data;
+  const { current, daily, hourly } = data;
   const weatherMeta = getWeatherMeta(current.weather_code);
 
   elements.locationName.textContent = `${location.name}, ${location.country || ""}`.trim();
@@ -142,6 +187,12 @@ function renderWeather(data, location) {
   elements.highTemp.textContent = formatTemperature(daily.temperature_2m_max[0]);
   elements.lowTemp.textContent = formatTemperature(daily.temperature_2m_min[0]);
 
+  renderHourlyForecast(
+    hourly.time.slice(0, 6),
+    hourly.temperature_2m.slice(0, 6),
+    hourly.weather_code.slice(0, 6)
+  );
+
   renderForecast(
     daily.time.slice(0, 5),
     daily.weather_code.slice(0, 5),
@@ -152,6 +203,7 @@ function renderWeather(data, location) {
 
 async function fetchWeather(city) {
   elements.statusMessage.textContent = "Looking up weather...";
+  elements.statusMessage.classList.add("loading");
 
   try {
     const geoResponse = await fetch(
@@ -173,7 +225,7 @@ async function fetchWeather(city) {
     state.lastCity = city;
 
     const forecastResponse = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`
     );
 
     if (!forecastResponse.ok) {
@@ -185,11 +237,14 @@ async function fetchWeather(city) {
     elements.statusMessage.textContent = `Showing weather for ${location.name}.`;
   } catch (error) {
     elements.statusMessage.textContent = error.message || "Something went wrong.";
+  } finally {
+    elements.statusMessage.classList.remove("loading");
   }
 }
 
 function initialize() {
   updateUnitButtons();
+  applyTheme();
   elements.cityInput.value = state.lastCity;
   fetchWeather(state.lastCity);
 }
@@ -215,6 +270,11 @@ elements.unitButtons.forEach((button) => {
       fetchWeather(city);
     }
   });
+});
+
+elements.themeToggle.addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  applyTheme();
 });
 
 initialize();

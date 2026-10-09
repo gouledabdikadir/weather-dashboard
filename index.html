@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body data-theme="dark">
     <div class="page-shell">
       <header class="topbar">
         <div class="brand-block">
@@ -23,17 +23,23 @@
           </div>
         </div>
 
-        <form id="searchForm" class="search-form" autocomplete="off">
-          <label class="sr-only" for="cityInput">Search city</label>
-          <input
-            id="cityInput"
-            name="city"
-            type="text"
-            placeholder="Search city..."
-            aria-label="Search city"
-          />
-          <button type="submit">Search</button>
-        </form>
+        <div class="toolbar">
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+            <span class="toggle-icon">🌙</span>
+          </button>
+
+          <form id="searchForm" class="search-form" autocomplete="off">
+            <label class="sr-only" for="cityInput">Search city</label>
+            <input
+              id="cityInput"
+              name="city"
+              type="text"
+              placeholder="Search city..."
+              aria-label="Search city"
+            />
+            <button type="submit">Search</button>
+          </form>
+        </div>
       </header>
 
       <main class="weather-layout">
@@ -93,6 +99,13 @@
           </div>
         </aside>
       </main>
+
+      <section class="weather-card hourly-card">
+        <div class="section-header">
+          <h2>Hourly Forecast</h2>
+        </div>
+        <div id="hourlyForecast" class="hourly-list" aria-live="polite"></div>
+      </section>
 
       <section class="weather-card forecast-card">
         <div class="forecast-header">
